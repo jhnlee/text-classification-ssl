@@ -92,23 +92,20 @@ class AugmentedDataset(TextDataset):
         self.max_len = max_len
 
         directory, filename = os.path.split(file_path)
-        directory = os.path.join(directory, str(num_labeled))
-        if use_bt:
-            aug_prefix = "bt_"
-            directory, _ = os.path.split(directory)
-            directory, dataset = os.path.split(directory)
-            directory = os.path.join(directory, "bt", dataset)
-        else:
-            aug_prefix = (
-                "augmented" + str(num_aug) + "_" + str(mlm_prob) + "_" + str(num_mlm_repeat) + "_"
-            )
+        
+        aug_prefix = "bt_"
+        directory, _ = os.path.split(directory)
+        directory, dataset = os.path.split(directory)
+        directory = os.path.join(directory, "bt", dataset)
+        
         aug_features_file = os.path.join(
             directory, aug_prefix + filename if aug_prefix not in filename else filename
         )
+        
         assert os.path.isfile(aug_features_file)
         logger.info("Loading features from augmented file : %s", aug_features_file)
         with open(aug_features_file, "rb") as handle:
-            self.aug_sentence, self.teacher_ori_logit = pickle.load(handle)
+            self.aug_sentence = pickle.load(handle)
 
     def __len__(self):
         return len(self.sentence)
@@ -133,11 +130,9 @@ class AugmentedDataset(TextDataset):
         else:
             aug_sentence = torch.tensor(self.aug_sentence[item], dtype=torch.long)
         label = torch.tensor(self.label[item], dtype=torch.long)
-        sentence_logit = torch.tensor(self.teacher_ori_logit[item], dtype=torch.float32)
 
         return (
             sentence,
             aug_sentence,
             label,
-            sentence_logit,
         )
