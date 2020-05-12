@@ -14,34 +14,43 @@
 # limitations under the License.
 #!/bin/bash
 
-'''
-replicas: An argument for parallel preprocessing. For example, when replicas=3,
-we divide the data into three parts, and only process one part
-according to the worker_id.
-'''
-replicas=1
-worker_id=0
+# Download transformer-big
+folder=checkpoints
+if [ ! -d ${folder} ]; then
+  echo "*** Download Transformer Models ***"
+  filename=back_trans_checkpoints.zip
+  wget https://storage.googleapis.com/uda_model/text/${filename}
+  unzip ${filename} && rm ${filename}
+  mv ${folder}/vocab.translate_enfr_wmt32k.32768.subwords ${folder}/vocab.enfr.large.32768
+fi
 
-'''
-input_file: The file to be back translated. We assume that each paragraph is in
-a separate line
-'''
+
+# replicas: An argument for parallel preprocessing. For example, when replicas=3,
+# we divide the data into three parts, and only process one part
+# according to the worker_id.
+
+replicas=$3
+worker_id=$2
+
+# input_file: The file to be back translated. We assume that each paragraph is in
+# a separate line
+
 data=$1
 input_file=input/${data}.txt
 
-'''
-sampling_temp: The sampling temperature for translation. See README.md for more
-details.
-'''
+# sampling_temp: The sampling temperature for translation. See README.md for more
+# details.
+
 sampling_temp=0.9
 
 
 # Dirs
-doc_len_dir=${data}/doc_len
-forward_src_dir=${data}/forward_src
-forward_gen_dir=${data}/forward_gen
-backward_gen_dir=${data}/backward_gen
-para_dir=${data}/paraphrase
+data_dir=back_trans_data
+doc_len_dir=output/${data}/doc_len
+forward_src_dir=output/${data}/forward_src
+forward_gen_dir=output/${data}/forward_gen
+backward_gen_dir=output/${data}/backward_gen
+para_dir=output/${data}/paraphrase
 
 mkdir -p ${data_dir}
 mkdir -p ${forward_src_dir}
@@ -51,7 +60,6 @@ mkdir -p ${doc_len_dir}
 mkdir -p ${para_dir}
 
 echo "*** spliting paragraph ***"
-# install nltk
 python split_paragraphs.py \
   --input_file=${input_file} \
   --output_file=${forward_src_dir}/file_${worker_id}_of_${replicas}.txt \
